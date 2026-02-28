@@ -11,7 +11,9 @@ class CreateImage(val ImgWidth: Int, val ImgHeight: Int, val ImgPath: String, va
 
   def create(Map: mutable.HashMap[(Int, Int), Int], TilingID: String): Unit = {
     val BI = new BufferedImage(ImgWidth, ImgHeight, BufferedImage.TYPE_INT_RGB)
-    //all pixels are of value 0xffffff by default
+    //all pixels are of value 0x000000 by default
+    //TODO: set all pixels transparent
+    BI.setRGB(0,0,ImgWidth,ImgHeight,Array.fill(ImgWidth*ImgHeight)(0x00ffffff),0,1)
     // color in pixels
     for
       (x,y) <- Map.keys

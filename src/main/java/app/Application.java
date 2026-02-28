@@ -14,12 +14,12 @@ public class Application extends javafx.application.Application {
 
         
         FXMLLoader fxmlLoader = new FXMLLoader(Application.class.getResource("App-view.fxml"));
-        Parent root = (Parent) fxmlLoader.load();
+        Parent root = fxmlLoader.load();
         AppController controller = fxmlLoader.getController();
-        controller.setupApp("C:/Users/User/Downloads/PPFS");
+        controller.setupApp("C:/Users/User/Downloads/testPB");
         
         Scene scene = new Scene(root, 960, 540);
-        stage.setTitle("PPSF - V0.1 Laura");
+        stage.setTitle("PPSF - V0.1");
         stage.setScene(scene);
         stage.show();
     }

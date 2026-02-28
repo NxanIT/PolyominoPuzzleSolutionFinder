@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.chart.CategoryAxis?>
-<?import javafx.scene.chart.LineChart?>
-<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.control.Tab?>
@@ -21,6 +19,7 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -117,25 +116,15 @@
                               <bottom>
                                  <HBox alignment="CENTER" spacing="10.0" BorderPane.alignment="CENTER">
                                     <children>
-                                       <Button mnemonicParsing="false" onAction="#calculateSolutions" text="Start" textFill="#179a00">
+                                       <Button fx:id="buttonStartSolutionFinder" mnemonicParsing="false" onAction="#calculateSolutions" text="Start" textFill="#179a00">
                                           <font>
                                              <Font name="System Bold" size="12.0" />
                                           </font></Button>
                                        <ProgressBar fx:id="SFProgressBar" prefHeight="20.0" prefWidth="700.0" progress="0.0" />
-                                       <Button cancelButton="true" disable="true" mnemonicParsing="false" onAction="#cancelCalculateSolutions" text="Cancel" />
+                                       <Button fx:id="buttonCancelSolutionFinder" cancelButton="true" disable="true" mnemonicParsing="false" onAction="#cancelCalculateSolutions" text="Cancel" />
                                     </children>
                                  </HBox>
                               </bottom>
-                              <center>
-                                 <LineChart title="Number of Searches per Level" BorderPane.alignment="CENTER">
-                                   <xAxis>
-                                     <CategoryAxis side="BOTTOM" />
-                                   </xAxis>
-                                   <yAxis>
-                                     <NumberAxis side="LEFT" />
-                                   </yAxis>
-                                 </LineChart>
-                              </center>
                               <left>
                                  <VBox prefHeight="408.0" prefWidth="245.0" spacing="20.0" BorderPane.alignment="CENTER">
                                     <children>
@@ -165,7 +154,7 @@
                                              <Label text="Matrix for &quot;most constrained&quot;" />
                                              <HBox alignment="TOP_CENTER">
                                                 <children>
-                                                   <GridPane hgap="5.0" prefHeight="100.0" prefWidth="100.0">
+                                                   <GridPane fx:id="SFGridPaneMatrixMostConstrained" hgap="5.0" prefHeight="100.0" prefWidth="100.0">
                                                      <columnConstraints>
                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -204,7 +193,7 @@
                                                 </children>
                                              </HBox>
                                              <CheckBox fx:id="SFCreateImages" mnemonicParsing="false" text="create images" />
-                                             <CheckBox fx:id="SFCreateStatisticData" mnemonicParsing="false" text="create statistical data" wrapText="true" />
+                                             <CheckBox fx:id="SFCreateStatisticData" mnemonicParsing="false" selected="true" text="create statistical data" wrapText="true" />
                                           </children>
                                        </VBox>
                                     </children>
@@ -216,6 +205,9 @@
                               <padding>
                                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                               </padding>
+                              <center>
+                                 <Pane fx:id="SFStatisticsPane" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+                              </center>
                            </BorderPane>
                         </children>
                      </AnchorPane>
@@ -227,13 +219,18 @@
                         <children>
                            <BorderPane layoutX="292.0" layoutY="99.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                               <center>
-                                 <Pagination maxPageIndicatorCount="20" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+                                 <Pagination fx:id="PaginationSolutions" maxPageIndicatorCount="20" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
                               </center>
                               <bottom>
                                  <HBox alignment="CENTER_LEFT" prefHeight="40.0" prefWidth="200.0" spacing="10.0" BorderPane.alignment="CENTER">
                                     <children>
-                                       <Label text="Show per consecutive Solution-ID" />
-                                       <TextField prefHeight="25.0" prefWidth="81.0" />
+                                       <Button mnemonicParsing="false" onAction="#initPagination" text="Initialize Pagination" />
+                                       <Label text="Show per Solution-ID" />
+                                       <TextField fx:id="textFieldShowImageSolutionID" prefHeight="25.0" prefWidth="81.0" />
+                                       <Button mnemonicParsing="false" onAction="#showImagePerSolutionID" text="View" />
+                                       <Label text="Show per index" />
+                                       <TextField fx:id="textFieldShowImageIndex" />
+                                       <Button mnemonicParsing="false" onAction="#showImagePerIndex" text="View" />
                                     </children>
                                     <BorderPane.margin>
                                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
@@ -252,7 +249,119 @@
                </Tab>
                <Tab text="Zoom in Solution">
                  <content>
-                   <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+                   <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                        <children>
+                           <BorderPane layoutX="111.0" layoutY="42.0" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <left>
+                                 <VBox prefHeight="418.0" prefWidth="135.0" spacing="8.0" BorderPane.alignment="CENTER">
+                                    <children>
+                                       <Label text="Zoom into:" />
+                                       <VBox spacing="4.0">
+                                          <children>
+                                             <TextField fx:id="textFieldSolutionIndexOrID" />
+                                             <RadioButton fx:id="buttonSelectSolutionIsIndex" mnemonicParsing="false" onAction="#toggleSolutionIndexOrID" selected="true" text="is index" />
+                                             <RadioButton fx:id="buttonSelectSolutionIsSolutionID" mnemonicParsing="false" onAction="#toggleSolutionIndexOrID" text="is SolutionID" />
+                                          </children>
+                                       </VBox>
+                                       <Label text="Set start conditions:">
+                                          <font>
+                                             <Font name="System Bold" size="12.0" />
+                                          </font></Label>
+                                       <VBox spacing="4.0">
+                                          <children>
+                                             <CheckBox fx:id="checkBoxSelectRestrictionTo" mnemonicParsing="false" text="restrict to connected component of:" wrapText="true" />
+                                             <TextField fx:id="textFieldRestrictTo" />
+                                             <RadioButton fx:id="buttonRestrictToIsIndex" mnemonicParsing="false" onAction="#toggleRestrictToIndexOrID" selected="true" text="is index" />
+                                             <RadioButton fx:id="buttonRestrictToIsID" mnemonicParsing="false" onAction="#toggleRestrictToIndexOrID" text="is SolutionID" />
+                                             <HBox alignment="CENTER_RIGHT" spacing="4.0">
+                                                <children>
+                                                   <Label text="with respect to ≤" />
+                                                   <TextField fx:id="textFieldRestrictToModulo" prefHeight="25.0" prefWidth="40.0" />
+                                                </children>
+                                             </HBox>
+                                          </children>
+                                       </VBox>
+                                       <VBox>
+                                          <children>
+                                             <Label text="Solutions upto" />
+                                             <HBox alignment="CENTER_RIGHT" spacing="4.0">
+                                                <children>
+                                                   <Label text="modulo ≤" />
+                                                   <TextField fx:id="textFieldModuloLeq" prefHeight="25.0" prefWidth="40.0" />
+                                                </children>
+                                             </HBox>
+                                          </children>
+                                       </VBox>
+                                       <VBox>
+                                          <children>
+                                             <Label text="Connect solutions," />
+                                             <HBox alignment="CENTER_RIGHT" spacing="4.0">
+                                                <children>
+                                                   <Label text="if ≤" />
+                                                   <TextField fx:id="textFieldConnectedLeq" prefHeight="25.0" prefWidth="40.0" />
+                                                </children>
+                                             </HBox>
+                                          </children>
+                                       </VBox>
+                                       <VBox>
+                                          <children>
+                                             <Label text="decrease both by" />
+                                             <HBox alignment="CENTER_RIGHT" spacing="4.0">
+                                                <children>
+                                                   <TextField fx:id="textFieldDecreaseByPerIteration" prefHeight="25.0" prefWidth="28.0" />
+                                                   <Label text="/iteration" />
+                                                </children>
+                                             </HBox>
+                                          </children>
+                                       </VBox>
+                                    </children>
+                                    <BorderPane.margin>
+                                       <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                    </BorderPane.margin>
+                                 </VBox>
+                              </left>
+                              <bottom>
+                                 <HBox alignment="CENTER_RIGHT" spacing="10.0" BorderPane.alignment="CENTER">
+                                    <children>
+                                       <Button fx:id="buttonStartZoomIn" mnemonicParsing="false" onAction="#startZoomIn" text="Start" />
+                                       <ProgressBar fx:id="progressBarZoomIn" prefHeight="18.0" prefWidth="769.0" progress="0.0" />
+                                       <Button fx:id="buttonCancelZoomIn" mnemonicParsing="false" text="cancel" />
+                                    </children>
+                                 </HBox>
+                              </bottom>
+                              <padding>
+                                 <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                              </padding>
+                              <right>
+                                 <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
+                                    <children>
+                                       <Label text="Legend">
+                                          <font>
+                                             <Font name="System Bold" size="12.0" />
+                                          </font>
+                                       </Label>
+                                    </children>
+                                 </VBox>
+                              </right>
+                              <center>
+                                 <ScrollPane BorderPane.alignment="CENTER">
+                                   <content>
+                                     <AnchorPane fx:id="anchorPaneZoomIn" prefHeight="500.0" prefWidth="600.0">
+                                          <padding>
+                                             <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                          </padding>
+                                          <opaqueInsets>
+                                             <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                          </opaqueInsets>
+                                       </AnchorPane>
+                                   </content>
+                                 </ScrollPane>
+                              </center>
+                              <opaqueInsets>
+                                 <Insets />
+                              </opaqueInsets>
+                           </BorderPane>
+                        </children></AnchorPane>
                  </content>
                </Tab>
                <Tab text="Untitled Tab">

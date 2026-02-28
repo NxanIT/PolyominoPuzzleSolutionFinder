@@ -1,12 +1,19 @@
 package SolutionFinder
 
 import java.io.{BufferedReader, File, FileReader}
+import java.util
+import java.util.concurrent.SynchronousQueue
 import scala.collection.mutable
 
 
-object CalculateSolutions {
 
-//  val bricks = Array(
+
+class CalculateSolutions(ProjectPath: String,
+                         Config: app.SolutionFinderConfig) extends Thread{
+  
+    
+
+  //  val bricks = Array(
 //    Vector((0, 0), (0, 1), (0, -1), (1, 0), (-1, 0)), //cross orange
 //    Vector((0, 0), (0, 1), (0, -1), (1, 1), (1, -1)), // light blue
 //    Vector((0, 0), (0, -1), (0, -2), (0, 1), (1, 0)), // purple
@@ -41,29 +48,34 @@ object CalculateSolutions {
 //      println(s"brick $i, \t $brick")
 //    }
 
-  def start(ProjectPath: String,
-            createImages: Boolean,
-            createStatisticalInfo: Boolean): Boolean = {
-    val SolutionsDirectory = new File(ProjectPath + "/Solutions")
-    SolutionsDirectory.mkdir()
-    if(createImages){
-      val ImageDirectory = new File(ProjectPath + "/SolutionImages")
-      ImageDirectory.mkdir()
+  
+  
+  val PD = new readPuzzleData(ProjectPath)
+  private val tiling = PD.getEmptyTiling()
+  val tiling_2d = new mutable.HashMap[(Int, Int), Int]()
+  tiling.keySet.map((x, y, z) => tiling_2d.addOne((x, y) -> 0))
+
+  val bricks: Array[Vector[(Int, Int, Int)]] = PD.getBricks()
+  private val bricks_2d = bricks.map(v => v.map((x, y, z) => (x, y)))
+
+  val colorMap: Array[Int] = PD.getColorMap()
+
+  val Program = new Tiler(tiling_2d, bricks_2d, colorMap, ProjectPath, Config)
+  
+  def getFirstLayerMatches(): Int = {
+    Program.count_firstLayerMatches()
+  }
+  
+  override def run(): Unit = {
+    
+    val solutions_found = Program.start()
+    val finished_computation = !Thread.currentThread().isInterrupted
+    if(finished_computation){
+      //TODO: write to file that all solutions have been found
+
     }
-    val PD = new readPuzzleData(ProjectPath)
-    val tiling = PD.getEmptyTiling()
-    val tiling_2d = new mutable.HashMap[(Int, Int), Int]()
-    tiling.keySet.map((x,y,z) => tiling_2d.addOne((x,y)->0))
-
-    val bricks = PD.getBricks()
-    val bricks_2d = bricks.map(v => v.map((x,y,z)=> (x,y)))
-
-    val colorMap = PD.getColorMap()
-    println(colorMap.mkString("Array(", ", ", ")"))
-
-    val Program = new Tiler(tiling_2d,bricks_2d,colorMap, ProjectPath)
-    Program.start()
-    true
+    println(if (finished_computation) s"tiler finished, found ${solutions_found} solutions." else "tiler interrupted.")
+    
   }
 
   class readPuzzleData(ProjectPath: String) {

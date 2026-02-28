@@ -58,15 +58,21 @@ public class CreatePuzzleController {
 
         String ProjectName = PuzzleName.getText();
         //TODO: check input
-        String ProjectDataString = pathSelected + "/" + ProjectName + "/PuzzleData";
-        File ProjectDirectory = new File(ProjectDataString);
+        File SolutionsDirectory = new File(pathSelected + "/" + ProjectName + "/Solutions");
+        SolutionsDirectory.mkdirs();
+        
+        File ImageDirectory = new File(pathSelected + "/" + ProjectName + "/SolutionImages");
+        ImageDirectory.mkdirs();
+
+        String ProjectDataString = pathSelected + "/" + ProjectName;
+        File ProjectDirectory = new File(ProjectDataString+ "/PuzzleData");
         ProjectDirectory.mkdirs(); 
         
         //create files for storing puzzle data
-        String[] fileNames = {"map.txt","bricks.txt","colors.txt"};
+        String[] fileNames = {"/PuzzleData/map.txt","/PuzzleData/bricks.txt","/PuzzleData/colors.txt","/Solutions/_solution_ids.txt"};
 
         File[] files = Arrays.stream(fileNames)
-                .map(name -> new File(ProjectDataString + "/" + name))
+                .map(name -> new File(ProjectDataString  + name))
                 .toArray(File[]::new);
         for(File file : files){
             file.createNewFile();
@@ -89,7 +95,7 @@ public class CreatePuzzleController {
     }
     
     String getPathSelected(){
-        return pathSelected + "/" + PuzzleName.getText();
+        return pathSelected + "\\" + PuzzleName.getText();
     }
 
 }

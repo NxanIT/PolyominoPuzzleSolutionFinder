@@ -29,20 +29,20 @@ public class BrickViewController {
     private int brickColor;
     public boolean was_successful = false;
 
-    private Hashtable<Integer, Vector<Pair<Integer,Integer>>> Brick;
+    private LayeredBrick Brick;
     Rectangle[][] cell_array;
     Rectangle backColorRectangle;
 
     void setBrickViewVariables(int brickID,
                                int defaultBrickColor,
-                               Hashtable<Integer, Vector<Pair<Integer,Integer>>> Brick,
+                               LayeredBrick Brick,
                                boolean CoordinateModeIs2D,
                                boolean BrickIsMap){
         
         this.defaultBrickColor = defaultBrickColor;
         this.brickColor = defaultBrickColor;
         this.Brick = Brick;
-
+        
         TextBrickID.setText(Integer.toString(brickID));
         customColorPicker.setValue(intToColor(defaultBrickColor));
         setupGrid();
@@ -72,7 +72,7 @@ public class BrickViewController {
     private void setupGrid(){
 
         //get maximal dimensions as per Hashtable - cell_array-dimension is max of this with default values
-        Pair<Integer,Integer> MapDimensions = getMapDimensions();
+        Pair<Integer,Integer> MapDimensions = Brick.getDimensions();
         int width = Integer.max(Integer.parseInt(brickWidth.getText()),MapDimensions.getKey());
         int height = Integer.max(Integer.parseInt(brickHeight.getText()),MapDimensions.getValue());
         brickWidth.setText(Integer.toString(width));
@@ -83,26 +83,11 @@ public class BrickViewController {
 
     }
 
-    private Pair<Integer,Integer> getMapDimensions() {
-        if(cell_array!=null){//initialisation process is finished
+    Pair<Integer,Integer> getMapDimensions() {
+        if (cell_array != null) {//initialisation process is finished
             storeCurrentLayer();
         }
-        int xm = 0;
-        int ym = 0;
-        Enumeration<Integer> keys = Brick.keys();
-        while (keys.hasMoreElements()){
-            Vector<Pair<Integer, Integer>> layer = Brick.get(keys.nextElement());
-
-            Optional<Pair<Integer, Integer>> max_x = layer.stream().max(Comparator.comparingInt(Pair::getKey));
-            Optional<Pair<Integer, Integer>> max_y = layer.stream().max(Comparator.comparingInt(Pair::getValue));
-            if(max_x.isPresent()){
-                xm = Integer.max(xm,max_x.get().getKey()+1);
-            }
-            if(max_y.isPresent()){
-                ym = Integer.max(ym,max_y.get().getValue()+1);
-            }
-        }
-        return new Pair<>(xm,ym);
+        return Brick.getDimensions();
     }
 
     private void makeGrid(int width, int height){
@@ -221,7 +206,7 @@ public class BrickViewController {
     private void storeCurrentLayer(){
         int layer = getCurrentLayerIndex();
         //store data in Brick
-        Brick.put(layer, getCellsFilledCurrentLayer());
+        Brick.storeLayer(layer, getCellsFilledCurrentLayer());
     }
     
     private int getCurrentLayerIndex(){
@@ -247,10 +232,10 @@ public class BrickViewController {
     private void loadLayer(int Layer){
         //updates Fill-value of cells corresponding to entries saved for the specified layer
         clearGrid();
-        if(!Brick.containsKey(Layer)){//no data yet
+        if(!Brick.containsLayer(Layer)){//no data yet
             return;
         }
-        Vector<Pair<Integer,Integer>> LayerMap = Brick.get(Layer);
+        Vector<Pair<Integer,Integer>> LayerMap = Brick.getLayer(Layer);
         for(Pair<Integer,Integer> Coordinate : LayerMap){//fill cells whose indices are in LayerMap with brick-color
             cell_array[Coordinate.getKey()][Coordinate.getValue()].setFill(intToPaint(brickColor));
         }
@@ -264,15 +249,13 @@ public class BrickViewController {
         }
     }
     
-    @FXML
     int getBrickHeight() {
-        int min_height = getMapDimensions().getValue();
+        int min_height = Brick.getDimensions().getValue();
         return Integer.max(min_height,Integer.parseInt(brickHeight.getText()));
     }
-
-    @FXML
+    
     int getBrickWidth() {
-        int min_width = getMapDimensions().getKey();
+        int min_width = Brick.getDimensions().getKey();
         return Integer.max(min_width,Integer.parseInt(brickWidth.getText()));
     }
 
@@ -323,7 +306,7 @@ public class BrickViewController {
         //TODO add 3D compatibility
         Vector<Pair<Integer,Integer>> currentLayer = getCellsFilledCurrentLayer();
         
-        Brick.put(getCurrentLayerIndex(),currentLayer);
+        Brick.storeLayer(getCurrentLayerIndex(),currentLayer);
         was_successful = true;
         closeWindow();
     }
@@ -332,9 +315,6 @@ public class BrickViewController {
         Stage s = (Stage) TextBrickID.getScene().getWindow();
         s.close();
     }
-
-
-
     
 
     private Color intToColor(int value){
@@ -371,7 +351,7 @@ public class BrickViewController {
         return brickColor;
     }
 
-    public Hashtable<Integer,Vector<Pair<Integer,Integer>>> getBrick(){
+    public LayeredBrick getBrick(){
         return Brick;
     }
 

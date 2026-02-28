@@ -1,28 +1,41 @@
 package SolutionFinder
 
+import java.util
 import scala.collection.mutable
+import scala.util.boundary
 
 class Tiler (Tiling: mutable.HashMap[(Int, Int), Int],
              bricks: Array[Vector[(Int,Int)]],
              colorMap: Array[Int],
-             ProjectPath: String
+             ProjectPath: String,
+             Config: app.SolutionFinderConfig
             ){
 
-  private val ImageCreator = new CreateImage(10, 10, ProjectPath + "/SolutionImages", colorMap)
+  private val max_x = Tiling.keys.maxBy((x,y) => x)._1 + 1
+  private val max_y = Tiling.keys.maxBy((x,y) => y)._2 + 1
+
+  private val ImageCreator = new CreateImage(max_x,max_y, ProjectPath + "/SolutionImages", colorMap)
   private val Categorizer = new SolutionCategories(bricks, ImageCreator)
   private val bricks_with_offset: mutable.HashMap[Int, IndexedSeq[Vector[(Int, Int)]]] = Categorizer.get_all_permutations_as_Hashmap
   private val Topologizer = new WriteSolutions(ProjectPath + "/Solutions")
 
-  //debug variables TODO: remove
-  private var LayerStats: List[Long] = List.fill(13)(0.toLong)
+  private val number_of_bricks = bricks.length
+  private var LayerStats: List[java.lang.Long] = List.fill[java.lang.Long](number_of_bricks+1)(0)
+  
   private var solutions_found = 0
-  private var pre_sol_found = 0
 
-  def start():Unit = {
+  def start():Int = {
     val number_of_bricks = bricks_with_offset.size
     val SolutionID = List.fill(number_of_bricks)((0,0,0))
     new_Layer(Tiling,bricks_with_offset,SolutionID)
     Topologizer.close()
+    solutions_found
+  }
+  
+  def count_firstLayerMatches(): Int = {
+    val start_coordinates = get_start_position(Tiling)
+    val t = bricks_with_offset.map(sh => sh(1).count(b => can_be_added(Tiling, b, start_coordinates)))
+    t.sum
   }
 
   private def new_Layer(Tiling: mutable.HashMap[(Int, Int), Int],
@@ -33,57 +46,64 @@ class Tiler (Tiling: mutable.HashMap[(Int, Int), Int],
     val start_coordinates = get_start_position(Tiling)
     //1.25: only for debug - TODO: remove
     val empty_tiling = Tiling.count((k, c) => c == 0)
-    val Lay = 12 - bricks_with_offset.size
-    //      if(Lay==8) then {
-    //        ImageCreator.create(Tiling,s"_pre-8-debug-$pre_sol_found")
-    //        pre_sol_found += 1
-    //      }
-    //      if pre_sol_found>=40 then sys.exit(42)
-    LayerStats = LayerStats.updated(Lay, 1.toLong + LayerStats(Lay))
-
+    val Lay:Integer = number_of_bricks - bricks_with_offset.size
+    LayerStats= LayerStats.updated(Lay, LayerStats(Lay)+1 )
+     
 
 
     //1.5: add offset to bricks here instead of twice TODO:
 
     //2. loop over all bricks in bricks_with_offset and all offsets
-    for
-      brick_index <- bricks_with_offset.keys
-      offset_index <- bricks_with_offset(brick_index).indices
-      brick = bricks_with_offset(brick_index)(offset_index)
-      if can_be_added(Tiling, brick, start_coordinates)
-    do {
-      //3. Add brick to new Tiling
-      val color = brick_index + 1
-      val NewTiling = Tiling.clone()
-      add_brick(NewTiling, brick, start_coordinates, color)
-      val New_bricks_with_offset = bricks_with_offset.clone()
-      New_bricks_with_offset.remove(brick_index)
-      val NewSolution_ID = Solution_ID.updated(brick_index, (start_coordinates(0), start_coordinates(1), offset_index))
+    boundary {
+      for
+        brick_index <- bricks_with_offset.keys
+        if !Thread.currentThread().isInterrupted
+        offset_index <- bricks_with_offset(brick_index).indices
+        brick = bricks_with_offset(brick_index)(offset_index)
+        if can_be_added(Tiling, brick, start_coordinates)
+      do {
+//        if (Thread.currentThread().isInterrupted) {
+//          break()
+//        }
+        //3. Add brick to new Tiling
+        val color = brick_index + 1
+        val NewTiling = Tiling.clone()
+        add_brick(NewTiling, brick, start_coordinates, color)
+        val New_bricks_with_offset = bricks_with_offset.clone()
+        New_bricks_with_offset.remove(brick_index)
+        val NewSolution_ID = Solution_ID.updated(brick_index, (start_coordinates(0), start_coordinates(1), offset_index))
 
-      //4. Check if Tiling is now complete -> create image; else create new layer
-      val count_NewTiling_still_empty = NewTiling.count((k, c) => c == 0)
-      if count_NewTiling_still_empty == 0 then {
-        //for debug TODO: remove
-        //println(s"Solution found in Layer $Lay.") //for debug TODO: remove
-        if solutions_found % 100 == 0 then println(s"$solutions_found, $LayerStats")
-        solutions_found = solutions_found + 1
-        val NewSolution_ID_Str = Categorizer.get_solution_id(NewSolution_ID)
-        //for debug TODO: uncomment
-        ImageCreator.create(NewTiling,NewSolution_ID_Str)
-        Topologizer.append_solution_id(NewSolution_ID_Str)
+        //4. Check if Tiling is now complete -> create image; else create new layer
+        val count_NewTiling_still_empty = NewTiling.count((k, c) => c == 0)
+        if count_NewTiling_still_empty == 0 then {
+          //for debug TODO: remove
+          //println(s"Solution found in Layer $Lay.") //for debug TODO: remove
+          if solutions_found % 400 == 0 then {
+            println(s"$solutions_found, $LayerStats")
+            val LayerOffer: util.Vector[java.lang.Long] = new util.Vector[java.lang.Long]()
+            LayerStats.zipWithIndex.foreach((v, i) => LayerOffer.add(i, v))
+            Config.queue.offer(LayerOffer)
+          }
+          solutions_found = solutions_found + 1
+          val NewSolution_ID_Str = Categorizer.get_solution_id(NewSolution_ID)
+          //for debug TODO: uncomment
+          ImageCreator.create(NewTiling, NewSolution_ID_Str)
+          Topologizer.append_solution_id(NewSolution_ID_Str)
 
-        /*
-        TODO: break for loop
-          (be aware that if there are more bricks than needed and if
-          one brick is coordinate wise a combination of other bricks,
-          then breaking here can lead to loss of solutions)
-        */
+          /*
+          TODO: break for loop
+            (be aware that if there are more bricks than needed and if
+            one brick is coordinate wise a combination of other bricks,
+            then breaking here can lead to loss of solutions)
+          */
 
-      } else {
+        } else {
 
-        new_Layer(NewTiling, New_bricks_with_offset, NewSolution_ID)
+          new_Layer(NewTiling, New_bricks_with_offset, NewSolution_ID)
+        }
       }
     }
+
   }
 
   private def get_start_position(Tiling: mutable.HashMap[(Int, Int), Int]): (Int, Int) = {
